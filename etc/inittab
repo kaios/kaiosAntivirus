@@ -1,0 +1,4 @@
+::sysinit:/etc/init.d/rcS
+tty1::respawn:/sbin/getty tty1 --autologin root
+::ctrlaltdel:/sbin/reboot > /dev/null 2>&1
+::restart:/sbin/init

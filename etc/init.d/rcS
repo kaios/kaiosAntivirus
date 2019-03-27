@@ -1,0 +1,40 @@
+#!/bin/sh
+# KaiOS i386 v3.0 init script
+# Writen by Shawn Rapaz Aug 15, 2018
+# Contact: info@kaios.org
+
+#Create all the symlinks to /bin/busybox
+/bin/busybox --install -s
+
+#Make tmpfs
+mkdir -v /dev/shm
+mount -vt tmpfs none /dev/shm
+
+#Disable kernel messages from popping onto the screen
+echo 0 > /proc/sys/kernel/printk
+
+#Start networking
+/sbin/ifup -a
+/sbin/udhcpc -s /usr/share/udhcpc/default.script
+
+#Function for parsing command line options with "=" in them
+# get_opt("init=/sbin/init") will return "/sbin/init"
+get_opt() {
+        echo "$@" | cut -d "=" -f 2
+}
+
+echo 'Configuring filesystems...'
+# Mount /proc.
+[ -f /proc/cmdline ] || /bin/mount /proc
+
+# Remount rootfs rw.
+/bin/mount -o remount,rw /
+
+#Auto Run Antivirus
+/root/bin/runav
+
+#Setting up TTY
+##setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+##exec >/dev/tty 2>&1
+setsid sh -c 'exec bash </dev/tty1 >/dev/tty1 2>&1'
+exec >/dev/tty 2>&1

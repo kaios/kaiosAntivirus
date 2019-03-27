@@ -1,0 +1,23 @@
+#!/sbin/sh
+
+while :
+do
+        clear
+        echo    "Welcome to KaiOS Antivirus Edition featuring ClamAV."
+	echo	"Please select one of the following:"
+        echo    "1. Download and update ClamAV Antivirus database"
+        echo    "2. Scan for virus"
+        echo    "3. Power off PC"
+        echo -n "Please enter option [1 - 3]"
+        read con
+        case $con in
+        1) /usr/local/bin/freshclam;;
+        2) /usr/local/bin/clamscan;;
+        3) /sbin/poweroff -f;;
+        4 ) echo "Thank you for using KaiOS Antivirus Edition featuring ClamAV.";
+           exit 1;;
+        *) echo "$con is an invaild option. Please select option between 1-4 only";
+           echo "Press [enter] key to continue. . .";
+          read enterKey;;
+esac
+done

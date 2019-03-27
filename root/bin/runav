@@ -1,0 +1,110 @@
+#!/bin/bash
+# KaiOS Antivirus 2019 Edition Auto Script
+# Writen by Shawn Rapaz March 04, 2019
+# v1.2
+
+# Disable non-critical kernel messages to console
+klogd -c 2
+
+# Finds Partitions
+PARTITIONS=$(awk 'length($4) > 3 {if (NR!=1) {print $4} }' < /proc/partitions)
+
+# Disable Ctrl-c exit
+trap "" 2
+
+findwindows ()
+{ # Find C:/ partition and create variable
+CDRIVE=$(find /mnt/ -maxdepth 2 | awk 'BEGIN {FS = "/"} /Windows/ {print $3;exit}')
+}
+
+fixcache ()
+{ # Fixes Windows save cache
+for i in $PARTITIONS
+   do
+   ntfsfix -d /dev/$i
+done
+}
+
+mountdrives ()
+{ # Mount hard drives
+for i in $PARTITIONS
+   do
+   mkdir /mnt/$i
+   ntfs-3g /dev/$i /mnt/$i -o remove_hiberfile
+   mount
+done
+}
+
+unmountdrives ()
+{ # Unmounting hard drives
+for i in $PARTITIONS
+   do
+   umount /mnt/$i
+done
+}
+
+exitscan ()
+{ # Powers off the PC with force flag after umount
+echo "Please delete infected files in C:/Virus_Vault at your own risk.Thank for using KaiOS 3.0 Antivirus Edition."
+powerdown 'Please remove USB stick and press Enter to power off the PC. It is now safe to do so.'
+}
+
+checkvault ()
+{ # Checking if C:/Virus_Vault exists, create if not found and finds Windows C: Drive
+ls /mnt/$CDRIVE/Virus_Vault > /dev/null 2>&1
+if [ $? -ne 0 ] ; then
+   echo "Now creating Virus Vault in C:/Virus_Vault"
+   mkdir /mnt/$CDRIVE/Virus_Vault
+fi
+}
+
+updatescan ()
+{ # Update virus database and scan mounted partitions
+freshclam
+for i in $PARTITIONS
+   do
+   clamscan -r --move=/mnt/$CDRIVE/Virus_Vault /mnt/$i
+done
+}
+
+results ()
+{ # Check to see if virus are found. If found, create report
+ls /mnt/$CDRIVE/Virus_Vault > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
+   echo "No virus found on $(date)."
+   echo "No virus found on $(date)." >> /mnt/$CDRIVE/Virus_Vault/virus_report_$(date +"%Y-%m-%d").txt
+else
+   echo "Viruses found. All virus are moved to C:/Virus_Vault."
+   echo "Creating virus report C:/Virus_Vault/virus_report_$(date +"%Y-%m-%d").txt"
+   ls /mnt/$CDRIVE/Virus_Vault/* >> /mnt/$CDRIVE/Virus_Vault/virus_report_$(date +"%Y-%m-%d").txt
+fi
+}
+
+powerdown ()
+{ # Power down the machine safely 
+read -p "$*"
+poweroff -f
+}
+
+autorun ()
+{ # Run the auto scan process
+   fixcache
+   mountdrives
+   findwindows
+   checkvault
+   updatescan
+   results
+   unmountdrives
+   exitscan
+}
+
+# Start of actual script
+reset
+   echo "Welcome to KaiOS 2019 Anti-Virus Edition."
+   read -p "Would you like to run KaiOS 2019 Anti-Virus Edition at your own risk? Please press y for yes or any other key to power off. Ready to proceed scandec? [y]" answer
+if [[ $answer = y ]] ; then
+   autorun
+else
+   powerdown 'Please remove USB stick and press Enter to power off the PC. It is now safe to do so.'
+fi
+exit
